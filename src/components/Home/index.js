@@ -26,18 +26,6 @@ class MessagesBase extends Component {
     };
   }
 
-  onChangeText = (event) => {
-    this.setState({ text: event.target.value });
-  };
-  onCreateMessage = (event, authUser) => {
-    this.props.firebase.messages().push({
-      text: this.state.text,
-      userId: authUser.uid,
-    });
-    this.setState({ text: "" });
-    event.preventDefault();
-  };
-
   componentDidMount() {
     this.setState({ loading: true });
 
@@ -55,9 +43,28 @@ class MessagesBase extends Component {
       }
     });
   }
+
   componentWillUnmount() {
     this.props.firebase.messages().off();
   }
+
+  onChangeText = (event) => {
+    this.setState({ text: event.target.value });
+  };
+
+  onCreateMessage = (event, authUser) => {
+    this.props.firebase.messages().push({
+      text: this.state.text,
+      userId: authUser.uid,
+    });
+    this.setState({ text: "" });
+    event.preventDefault();
+  };
+
+  onRemoveMessage = (uid) => {
+    this.props.firebase.message(uid).remove();
+  };
+
   render() {
     const { text, messages, loading } = this.state;
     return (
@@ -66,7 +73,10 @@ class MessagesBase extends Component {
           <div>
             {loading && <div>Loading ...</div>}
             {messages ? (
-              <MessageList messages={messages} />
+              <MessageList
+                messages={messages}
+                onRemoveMessage={this.onRemoveMessage}
+              />
             ) : (
               <div>There are no messages ...</div>
             )}
@@ -83,16 +93,23 @@ class MessagesBase extends Component {
 
 const Messages = withFirebase(MessagesBase);
 
-const MessageList = ({ messages }) => (
+const MessageList = ({ messages, onRemoveMessage }) => (
   <ul>
     {messages.map((message) => (
-      <MessageItem key={message.uid} message={message} />
+      <MessageItem
+        key={message.uid}
+        message={message}
+        onRemoveMessage={onRemoveMessage}
+      />
     ))}
   </ul>
 );
-const MessageItem = ({ message }) => (
+const MessageItem = ({ message, onRemoveMessage }) => (
   <li>
     <strong>{message.userId}</strong> {message.text}
+    <button type="button" onClick={() => onRemoveMessage(message.uid)}>
+      Delete
+    </button>
   </li>
 );
 
